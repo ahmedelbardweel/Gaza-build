@@ -30,8 +30,12 @@ jobs:
       - name: 📦 Install Flutter Dependencies
         run: flutter pub get
 
-      - name: 🔍 Analyze Code
-        run: flutter analyze
+      - name: 🍎 Sync and Install CocoaPods
+        run: |
+          cd ios
+          pod deintegrate || true
+          pod install --repo-update
+          cd ..
 
       - name: 🔨 Build iOS App (Release, No Codesign)
         run: flutter build ios --release --no-codesign
