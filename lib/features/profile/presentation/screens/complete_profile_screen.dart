@@ -502,7 +502,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: AppTheme.borderRadius,
                   border: Border.all(
-                    color: _degreeUploaded ? AppColors.success : AppColors.border,
+                    color: _degreeUploaded ? AppColors.success : Theme.of(context).dividerColor,
                   ),
                 ),
                 child: Row(
@@ -511,9 +511,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'شهادة التخرج / بطاقة النقابة المعتمدة',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -522,7 +526,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                 : 'مطلوبة لمنح شارة المهندس المعتمد وتوثيق العروض',
                             style: TextStyle(
                               fontSize: 11.5,
-                              color: _degreeUploaded ? AppColors.success : AppColors.textSecondary,
+                              color: _degreeUploaded
+                                  ? AppColors.success
+                                  : (Theme.of(context).brightness == Brightness.dark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.textSecondary),
                             ),
                           ),
                         ],
@@ -953,7 +961,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.successContainer,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.darkSuccessContainer
+                      : AppColors.successContainer,
                   borderRadius: AppTheme.borderRadius,
                   border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                 ),

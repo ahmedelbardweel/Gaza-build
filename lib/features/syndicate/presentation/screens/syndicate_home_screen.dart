@@ -351,9 +351,9 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
               children: [
                 Text(
                   guide.summary,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.35,
                   ),
                 ),
@@ -363,21 +363,23 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
                     spacing: 6,
                     runSpacing: 6,
                     children: guide.approvedMaterials.map((m) {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 7,
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3E8FF),
+                          color: isDark ? const Color(0xFF2E1065) : const Color(0xFFF3E8FF),
                           borderRadius: AppTheme.borderRadius,
+                          border: Border.all(color: isDark ? const Color(0xFF581C87) : const Color(0xFFE9D5FF)),
                         ),
                         child: Text(
                           m,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF6B21A8),
+                            color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF6B21A8),
                           ),
                         ),
                       );
@@ -408,6 +410,7 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
       itemBuilder: (context, index) {
         final dispute = state.arbitrationCases[index];
         final isResolved = dispute.status == 'resolved';
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return AppCard(
           margin: const EdgeInsets.only(bottom: 10),
@@ -443,9 +446,9 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
               const SizedBox(height: 4),
               Text(
                 'المطلب: ${dispute.requestedResolution}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                 ),
               ),
               if (dispute.syndicateRuling != null) ...[
@@ -453,8 +456,9 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.successContainer,
+                    color: isDark ? AppColors.darkSuccessContainer : AppColors.successContainer,
                     borderRadius: AppTheme.borderRadius,
+                    border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,9 +474,9 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
                       const SizedBox(height: 2),
                       Text(
                         dispute.syndicateRuling!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -532,14 +536,16 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
             children: [
               Expanded(
                 child: _statMetricCard(
+                  context: context,
                   label: 'مهندسون معتمدون',
                   value: '${stats.totalVerifiedEngineers}',
-                  color: AppColors.primary,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _statMetricCard(
+                  context: context,
                   label: 'طلاب تم تدريبهم',
                   value: '${stats.totalActiveStudents}',
                   color: AppColors.studentRole,
@@ -553,14 +559,16 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
             children: [
               Expanded(
                 child: _statMetricCard(
+                  context: context,
                   label: 'مشاريع إعمار نشطة',
                   value: '${stats.totalReconstructionProjects}',
-                  color: AppColors.clientRole,
+                  color: isDark ? const Color(0xFF60A5FA) : AppColors.clientRole,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _statMetricCard(
+                  context: context,
                   label: 'المساحة المعاد تأهيلها',
                   value: '${(stats.totalReconstructedAreaM2 / 1000).toStringAsFixed(1)}K م²',
                   color: AppColors.success,
@@ -574,19 +582,21 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
             children: [
               Expanded(
                 child: _statMetricCard(
+                  context: context,
                   label: 'حجم العقود المضمونة',
                   value:
                       '\$${(stats.estimatedContractVolumeUsd / 1000).toStringAsFixed(1)}K',
-                  color: const Color(0xFF0284C7),
+                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _statMetricCard(
+                  context: context,
                   label: 'دخل مكتسب للطلاب',
                   value:
                       '\$${(stats.studentEarnedIncomeUsd / 1000).toStringAsFixed(1)}K',
-                  color: const Color(0xFFB45309),
+                  color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309),
                 ),
               ),
             ],
@@ -597,16 +607,18 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
   }
 
   Widget _statMetricCard({
+    required BuildContext context,
     required String label,
     required String value,
     required Color color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppTheme.borderRadius,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,9 +634,9 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11.5,
-              color: AppColors.textSecondary,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
             ),
           ),
         ],

@@ -103,7 +103,11 @@ class _EngineerHomeScreenState extends State<EngineerHomeScreen> {
                             children: [
                               Text(
                                 'مشاريعي قيد التنفيذ (${activeProjects.length})',
-                                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
                               ),
                               TextButton(
                                 style: TextButton.styleFrom(
@@ -148,7 +152,11 @@ class _EngineerHomeScreenState extends State<EngineerHomeScreen> {
                             children: [
                               Text(
                                 'مهام فريق الطلاب المساعدين (${myTasks.length})',
-                                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
                               ),
                               TextButton(
                                 style: TextButton.styleFrom(

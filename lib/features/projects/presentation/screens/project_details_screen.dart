@@ -26,6 +26,8 @@ class ProjectDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return BlocConsumer<ProjectsBloc, ProjectsState>(
       listener: (context, state) {
         if (state.status == ProjectsStatus.actionSuccess &&
@@ -70,18 +72,16 @@ class ProjectDetailsScreen extends StatelessWidget {
         return AppScaffold(
           title: 'تفاصيل وإدارة المشروع',
           showBackButton: true,
-          backgroundColor: AppColors.primary,
-          appBarBackgroundColor: AppColors.primary,
-          appBarForegroundColor: Colors.black,
-          systemNavigationBarColor: AppColors.background,
-          safeAreaBottom: false,
           actions: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.black,
-                  side: const BorderSide(color: Colors.black, width: 1),
+                  foregroundColor: isDark ? AppColors.primaryLight : Colors.black,
+                  side: BorderSide(
+                    color: isDark ? AppColors.primaryLight : Colors.black,
+                    width: 1,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppTheme.borderRadius,
                   ),
@@ -110,263 +110,253 @@ class ProjectDetailsScreen extends StatelessWidget {
               ),
             ),
           ],
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ─── UPPER SECTION: Project Details Header on Teal Canvas ───
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Row: Title & Status Badge
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            project.title,
-                            style: const TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black,
-                              height: 1.3,
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ─── UPPER SECTION: Project Details Header Card ───
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Theme.of(context).colorScheme.surface
+                        : AppColors.primary.withValues(alpha: 0.15),
+                    borderRadius: AppTheme.borderRadius,
+                    border: Border.all(
+                      color: isDark
+                          ? Theme.of(context).dividerColor
+                          : AppColors.primary.withValues(alpha: 0.4),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header Row: Title & Status Badge
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              project.title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                height: 1.3,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildStatusBadgeOnDark(project.status),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Location & Address
-                    Text(
-                      '$cleanCity ${project.detailedAddress.isNotEmpty ? "• ${project.detailedAddress}" : ""}',
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w500,
+                          const SizedBox(width: 8),
+                          _buildStatusBadge(context, project.status),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 6),
+                      const SizedBox(height: 6),
 
-                    // Description text
-                    Text(
-                      project.description,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Specifications Pills
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _specPillColored(
-                          'المساحة: ${project.areaM2.toInt()} م²',
-                        ),
-                        _specPillColored(
-                          'الميزانية: \$${project.approximateBudgetUsd.toInt()}',
-                        ),
-                        _specPillColored(
-                          'النمط: ${project.preferredStyle.split('(').first.trim()}',
-                        ),
-                        _specPillColored(
-                          'النوع: ${project.projectType.split('(').first.trim()}',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Guarantee & Escrow Notice
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: AppTheme.borderRadius,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: Text(
-                        project.isEscrowSecured
-                            ? 'الضمان المالي (Escrow) مفعّل • الدفعات محمية لدى نقابة المهندسين'
-                            : 'ضمان حقوق الطرفين والتحكيم الفني معتمد عبر نقابة المهندسين',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.black,
+                      // Location & Address
+                      Text(
+                        '$cleanCity ${project.detailedAddress.isNotEmpty ? "• ${project.detailedAddress}" : ""}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: 8),
 
-              // ─── LOWER SECTION: Distinct Bottom Container with Visible Rounded Top Corners ───
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(5),
-                      topRight: Radius.circular(5),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: Offset(0, -4),
+                      // Description text
+                      Text(
+                        project.description,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Specifications Pills
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _specPill(context, 'المساحة: ${project.areaM2.toInt()} م²'),
+                          _specPill(context, 'الميزانية: \$${project.approximateBudgetUsd.toInt()}'),
+                          _specPill(context, 'النمط: ${project.preferredStyle.split('(').first.trim()}'),
+                          _specPill(context, 'النوع: ${project.projectType.split('(').first.trim()}'),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Guarantee & Escrow Notice
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.darkPrimaryContainer
+                              : AppColors.primaryContainer,
+                          borderRadius: AppTheme.borderRadius,
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.primary.withValues(alpha: 0.3)
+                                : AppColors.primary.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.verified_user_rounded,
+                              size: 16,
+                              color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                project.isEscrowSecured
+                                    ? 'الضمان المالي (Escrow) مفعّل • الدفعات محمية لدى نقابة المهندسين'
+                                    : 'ضمان حقوق الطرفين والتحكيم الفني معتمد عبر نقابة المهندسين',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark ? AppColors.primaryLight : const Color(0xFF92400E),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(5),
-                      topRight: Radius.circular(5),
-                    ),
-                    child: ListView(
-                      padding: EdgeInsets.fromLTRB(
-                        10,
-                        12,
-                        10,
-                        MediaQuery.of(context).padding.bottom + 16,
+                ),
+
+                const SizedBox(height: 16),
+
+                // Section: Milestones (If In-Progress or Completed)
+                if (project.status == ProjectStatus.inProgress ||
+                    project.status == ProjectStatus.completed) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'مراحل الإنجاز والدفعات (Milestones)',
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
-                      children: [
-                        // Section: Milestones (If In-Progress or Completed)
-                        if (project.status == ProjectStatus.inProgress ||
-                            project.status == ProjectStatus.completed) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'مراحل الإنجاز والدفعات (Milestones)',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              Text(
-                                'نسبة الإنجاز: ${project.completionPercentage}%',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: AppTheme.borderRadius,
-                            child: LinearProgressIndicator(
-                              value: project.completionPercentage / 100,
-                              backgroundColor: AppColors.surfaceVariant,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                AppColors.primary,
-                              ),
-                              minHeight: 6,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-
-                          ...project.milestones.map(
-                            (m) => _buildMilestoneCard(
-                              context,
-                              project,
-                              m,
-                              isOwner,
-                              isEngineer,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-
-                        // Section: Received Bids (When in Bidding phase)
-                        if (project.status == ProjectStatus.bidding) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'العروض الفنية والتصاميم الأولية',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryContainer,
-                                  borderRadius: AppTheme.borderRadius,
-                                ),
-                                child: const Text(
-                                  'عروض معتمدة',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-
-                          if (project.bids.isEmpty)
-                            const AppEmptyState(
-                              title: 'في انتظار عروض المهندسين',
-                              message:
-                                  'طلبك منشور في سوق المشاريع وسيصلك إشعار فور تقديم المهندسين لعروضهم ومقترحاتهم.',
-                            )
-                          else
-                            ...project.bids.map(
-                              (bid) =>
-                                  _buildBidCard(context, project, bid, isOwner),
-                            ),
-                        ],
-                      ],
+                      Text(
+                        'نسبة الإنجاز: ${project.completionPercentage}%',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.primaryLight : AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: AppTheme.borderRadius,
+                    child: LinearProgressIndicator(
+                      value: project.completionPercentage / 100,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
+                      minHeight: 6,
                     ),
                   ),
-                ),
-              ),
-            ],
+                  const SizedBox(height: 10),
+
+                  ...project.milestones.map(
+                    (m) => _buildMilestoneCard(
+                      context,
+                      project,
+                      m,
+                      isOwner,
+                      isEngineer,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+
+                // Section: Received Bids (When in Bidding phase)
+                if (project.status == ProjectStatus.bidding) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'العروض الفنية والتصاميم الأولية (${project.bids.length})',
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkPrimaryContainer : AppColors.primaryContainer,
+                          borderRadius: AppTheme.borderRadius,
+                        ),
+                        child: Text(
+                          'عروض معتمدة',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  if (project.bids.isEmpty)
+                    const AppEmptyState(
+                      title: 'في انتظار عروض المهندسين',
+                      message:
+                          'طلبك منشور في سوق المشاريع وسيصلك إشعار فور تقديم المهندسين لعروضهم ومقترحاتهم.',
+                    )
+                  else
+                    ...project.bids.map(
+                      (bid) =>
+                          _buildBidCard(context, project, bid, isOwner),
+                    ),
+                ],
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _specPillColored(String text) {
+  Widget _specPill(BuildContext context, String text) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: AppTheme.borderRadius,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
-          color: Colors.black,
+          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -654,37 +644,42 @@ class ProjectDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadgeOnDark(ProjectStatus status) {
+  Widget _buildStatusBadge(BuildContext context, ProjectStatus status) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     String text;
-    Color fg = AppColors.primary;
-    Color bg = Colors.black;
+    Color fg;
+    Color bg;
 
     switch (status) {
       case ProjectStatus.bidding:
         text = 'استقبال العروض';
-        fg = AppColors.primary;
-        bg = Colors.black;
+        fg = isDark ? AppColors.primaryLight : AppColors.primaryDark;
+        bg = isDark ? AppColors.darkPrimaryContainer : AppColors.primaryContainer;
         break;
       case ProjectStatus.inProgress:
         text = 'قيد التنفيذ';
-        fg = AppColors.primary;
-        bg = Colors.black;
+        fg = isDark ? AppColors.primaryLight : AppColors.primaryDark;
+        bg = isDark ? AppColors.darkPrimaryContainer : AppColors.primaryContainer;
         break;
       case ProjectStatus.completed:
         text = 'مكتمل ومعتمد';
         fg = const Color(0xFF4ADE80);
-        bg = const Color(0xFF0D2818);
+        bg = isDark ? const Color(0xFF0D2818) : const Color(0xFFDCFCE7);
         break;
       case ProjectStatus.disputed:
         text = 'نزاع لدى النقابة';
         fg = const Color(0xFFF87171);
-        bg = const Color(0xFF2B0E0E);
+        bg = isDark ? const Color(0xFF2B0E0E) : const Color(0xFFFEE2E2);
         break;
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: AppTheme.borderRadius),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: AppTheme.borderRadius,
+        border: Border.all(color: fg.withValues(alpha: 0.3)),
+      ),
       child: Text(
         text,
         style: TextStyle(

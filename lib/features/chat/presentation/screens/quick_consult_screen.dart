@@ -73,6 +73,8 @@ class _QuickConsultScreenState extends State<QuickConsultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AppScaffold(
       title: 'جلسة استشارة سريعة مع مهندس',
       showBackButton: true,
@@ -81,11 +83,36 @@ class _QuickConsultScreenState extends State<QuickConsultScreen> {
           // Header info bar
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            color: const Color(0xFFFEF3C7),
-            child: const Text(
-              'استشارة مباشرة فورية • مدعومة بتوصيات نقابة المهندسين لمواد غزة البديلة',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkPrimaryContainer : const Color(0xFFFEF3C7),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? AppColors.primary.withValues(alpha: 0.3)
+                      : const Color(0xFFFDE68A),
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.support_agent_rounded,
+                  size: 18,
+                  color: isDark ? AppColors.primaryLight : const Color(0xFF92400E),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'استشارة مباشرة فورية • مدعومة بتوصيات نقابة المهندسين لمواد غزة البديلة',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.primaryLight : const Color(0xFF92400E),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -103,9 +130,11 @@ class _QuickConsultScreenState extends State<QuickConsultScreen> {
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                     decoration: BoxDecoration(
-                      color: isMe ? AppColors.primary : Theme.of(context).colorScheme.surface,
+                      color: isMe
+                          ? AppColors.primary
+                          : Theme.of(context).colorScheme.surface,
                       borderRadius: AppTheme.borderRadius,
                       border: Border.all(
                         color: isMe ? AppColors.primary : Theme.of(context).dividerColor,
@@ -119,7 +148,9 @@ class _QuickConsultScreenState extends State<QuickConsultScreen> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: isMe ? Colors.black87 : AppColors.primary,
+                            color: isMe
+                                ? Colors.black87
+                                : (isDark ? AppColors.primaryLight : AppColors.primaryDark),
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -139,19 +170,19 @@ class _QuickConsultScreenState extends State<QuickConsultScreen> {
             ),
           ),
 
-          // Input field
+          // Input Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              border: Border(top: BorderSide(color: Theme.of(context).dividerColor, width: 1)),
+              border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
             ),
             child: SafeArea(
               child: Row(
                 children: [
                   Expanded(
                     child: AppTextField(
-                      hint: 'اكتب سؤالك الهندسي هنا...',
+                      hint: 'اكتب سؤالك أو استفسارك الهندسي هنا...',
                       controller: _messageController,
                       onFieldSubmitted: (_) => _sendMessage(),
                     ),

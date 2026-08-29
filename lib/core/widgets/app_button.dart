@@ -131,6 +131,7 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final double computedHeight = height ?? _getHeightForSize(size);
     final double fontSize = _getFontSizeForSize(size);
     final effectivePadding = padding ?? _getPaddingForSize(size);
@@ -146,10 +147,13 @@ class AppButton extends StatelessWidget {
             height: 14,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(_getLoadingColor()),
+              valueColor: AlwaysStoppedAnimation<Color>(_getLoadingColor(isDark)),
             ),
           ),
           const SizedBox(width: 8),
+        ] else if (icon != null) ...[
+          Icon(icon, size: fontSize + 2),
+          const SizedBox(width: 6),
         ],
         Flexible(
           child: Text(
@@ -157,13 +161,16 @@ class AppButton extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: fontSize,
-              fontWeight: FontWeight.w600,
-              color: Colors.black
+              fontWeight: FontWeight.w700,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        if (trailingIcon != null && !isLoading) ...[
+          const SizedBox(width: 6),
+          trailingIcon!,
+        ],
       ],
     );
 
@@ -179,7 +186,7 @@ class AppButton extends StatelessWidget {
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.black,
             disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
-            disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
+            disabledForegroundColor: Colors.black45,
             padding: effectivePadding,
             shape: AppTheme.roundedShape,
             minimumSize: Size(width ?? 0, computedHeight),
@@ -193,7 +200,7 @@ class AppButton extends StatelessWidget {
         buttonWidget = FilledButton(
           onPressed: effectiveOnPressed,
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.secondary,
+            backgroundColor: isDark ? const Color(0xFF1E293B) : AppColors.secondary,
             foregroundColor: Colors.white,
             disabledBackgroundColor: AppColors.secondary.withValues(alpha: 0.4),
             disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
@@ -210,11 +217,14 @@ class AppButton extends StatelessWidget {
         buttonWidget = OutlinedButton(
           onPressed: effectiveOnPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
+            foregroundColor: isDark ? AppColors.primaryLight : AppColors.primaryDark,
             disabledForegroundColor: AppColors.textMuted,
             padding: effectivePadding,
             shape: AppTheme.roundedShape,
-            side: const BorderSide(color: AppColors.border, width: 1),
+            side: BorderSide(
+              color: isDark ? Theme.of(context).dividerColor : AppColors.border,
+              width: 1,
+            ),
             minimumSize: Size(width ?? 0, computedHeight),
           ),
           child: content,
@@ -242,7 +252,7 @@ class AppButton extends StatelessWidget {
         buttonWidget = TextButton(
           onPressed: effectiveOnPressed,
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary,
+            foregroundColor: isDark ? AppColors.primaryLight : AppColors.primaryDark,
             disabledForegroundColor: AppColors.textMuted,
             padding: effectivePadding,
             shape: AppTheme.roundedShape,
@@ -256,9 +266,9 @@ class AppButton extends StatelessWidget {
         buttonWidget = FilledButton.tonal(
           onPressed: effectiveOnPressed,
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.surfaceVariant,
-            foregroundColor: AppColors.textPrimary,
-            disabledBackgroundColor: AppColors.surfaceVariant.withValues(alpha: 0.5),
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
+            disabledBackgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             disabledForegroundColor: AppColors.textMuted,
             padding: effectivePadding,
             shape: AppTheme.roundedShape,
@@ -325,17 +335,18 @@ class AppButton extends StatelessWidget {
     }
   }
 
-  Color _getLoadingColor() {
+  Color _getLoadingColor(bool isDark) {
     switch (variant) {
       case AppButtonVariant.primary:
+        return Colors.black;
       case AppButtonVariant.secondary:
       case AppButtonVariant.danger:
-        return Colors.black;
+        return Colors.white;
       case AppButtonVariant.outline:
       case AppButtonVariant.ghost:
-        return AppColors.primary;
+        return isDark ? AppColors.primaryLight : AppColors.primary;
       case AppButtonVariant.tonal:
-        return AppColors.textPrimary;
+        return isDark ? Colors.white : Colors.black;
     }
   }
 }
