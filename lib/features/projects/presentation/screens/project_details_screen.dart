@@ -8,6 +8,7 @@ import 'package:gaza_build/core/widgets/app_card.dart';
 import 'package:gaza_build/core/widgets/app_dialog.dart';
 import 'package:gaza_build/core/widgets/app_empty_state.dart';
 import 'package:gaza_build/core/widgets/app_scaffold.dart';
+import 'package:gaza_build/core/widgets/app_text_field.dart';
 import 'package:gaza_build/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:gaza_build/features/projects/presentation/bloc/projects_bloc.dart';
 import 'package:gaza_build/features/projects/presentation/bloc/projects_event.dart';
@@ -40,27 +41,40 @@ class ProjectDetailsScreen extends StatelessWidget {
               behavior: SnackBarBehavior.floating,
             ),
           );
+        } else if (state.status == ProjectsStatus.error &&
+            state.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage!),
+              backgroundColor: AppColors.error,
+              shape: AppTheme.roundedShape,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       },
       builder: (context, state) {
-        final project = state.projects.firstWhere(
-          (p) => p.id == projectId,
-          orElse: () =>
-              initialProject ??
-              Project(
-                id: '',
-                clientId: '',
-                clientName: '',
-                title: 'تفاصيل المشروع',
-                description: '',
-                projectType: '',
-                areaM2: 0,
-                approximateBudgetUsd: 0,
-                preferredStyle: '',
-                city: '',
-                createdAt: DateTime.now(),
-              ),
-        );
+        final project = (state.selectedProject != null &&
+                (state.selectedProject!.id == projectId || projectId.isEmpty))
+            ? state.selectedProject!
+            : state.projects.firstWhere(
+                (p) => p.id == projectId,
+                orElse: () =>
+                    initialProject ??
+                    Project(
+                      id: '',
+                      clientId: '',
+                      clientName: '',
+                      title: 'تفاصيل المشروع',
+                      description: '',
+                      projectType: '',
+                      areaM2: 0,
+                      approximateBudgetUsd: 0,
+                      preferredStyle: '',
+                      city: '',
+                      createdAt: DateTime.now(),
+                    ),
+              );
 
         final currentUser = context.read<AuthBloc>().state.user;
         final isOwner =
@@ -110,11 +124,16 @@ class ProjectDetailsScreen extends StatelessWidget {
               ),
             ),
           ],
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          body: RefreshIndicator(
+            onRefresh: () async {
+              context.read<ProjectsBloc>().add(const LoadProjectsRequested());
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 // ─── UPPER SECTION: Project Details Header Card ───
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -338,10 +357,11 @@ class ProjectDetailsScreen extends StatelessWidget {
               ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _specPill(BuildContext context, String text) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -455,6 +475,41 @@ class ProjectDetailsScreen extends StatelessWidget {
             ],
           ),
 
+          if (milestone.isCompleted) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkSurfaceElevated
+                    : AppColors.successContainer.withValues(alpha: 0.5),
+                borderRadius: AppTheme.borderRadius,
+                border: Border.all(
+                  color: AppColors.success.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded,
+                      color: AppColors.success, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      milestone.proofImageUrl?.isNotEmpty == true
+                          ? 'المخرجات المعتمدة: ${milestone.proofImageUrl!}'
+                          : 'تم إنجاز وتسليم مخرجات المرحلة بنجاح ✓',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           if (isEngineer && !milestone.isCompleted) ...[
             const SizedBox(height: 8),
             Divider(height: 1, color: Theme.of(context).dividerColor),
@@ -465,21 +520,245 @@ class ProjectDetailsScreen extends StatelessWidget {
                 AppButton.primary(
                   text: 'رفع مخرجات المرحلة واعتماد الإنجاز',
                   size: AppButtonSize.small,
-                  onPressed: () {
-                    context.read<ProjectsBloc>().add(
-                      UpdateMilestoneRequested(
-                        projectId: project.id,
-                        milestoneId: milestone.id,
-                        isCompleted: true,
-                        proofImageUrl: 'uploaded_deliverable_proof.pdf',
-                      ),
-                    );
-                  },
+                  onPressed: () => _showDeliverableUploadDialog(
+                    context,
+                    project,
+                    milestone,
+                  ),
                 ),
               ],
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showDeliverableUploadDialog(
+    BuildContext context,
+    Project project,
+    ProjectMilestone milestone,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final noteController = TextEditingController(
+      text: 'تم إعداد وإنهاء كافة المخرجات الفنية للمرحلة ومطابقتها مع معايير نقابة المهندسين.',
+    );
+    String selectedFileType = 'مخططات تنفيذية أوتوكاد و PDF (DWG/PDF)';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: Theme.of(ctx).dividerColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkPrimaryContainer
+                            : AppColors.primaryContainer,
+                        borderRadius: AppTheme.borderRadius,
+                      ),
+                      child: const Icon(
+                        Icons.cloud_upload_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'تسليم مخرجات: ${milestone.title}',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(ctx).colorScheme.onSurface,
+                            ),
+                          ),
+                          Text(
+                            'الدفعة المالية المستحقة: \$${milestone.paymentAmountUsd.toInt()} • الوزن: ${milestone.percentageWeight}%',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Deliverable description
+                AppTextField(
+                  label: 'تقرير وملاحظات الإنجاز الفني *',
+                  hint: 'اكتب ملخص ما تم إنجازه في هذه المرحلة لتظهر للمالك والنقابة',
+                  controller: noteController,
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+
+                // Deliverable file type selection
+                Text(
+                  'نوع المخرجات المرفقة المعتمدة',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(ctx).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkSurfaceElevated
+                        : Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                    borderRadius: AppTheme.borderRadius,
+                    border: Border.all(color: Theme.of(ctx).dividerColor),
+                  ),
+                  child: Column(
+                    children: [
+                      _fileTypeOption(
+                        context: ctx,
+                        title: 'مخططات تنفيذية أوتوكاد و PDF (DWG/PDF)',
+                        isSelected: selectedFileType.contains('أوتوكاد'),
+                        onTap: () => setDialogState(
+                          () => selectedFileType = 'مخططات تنفيذية أوتوكاد و PDF (DWG/PDF)',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _fileTypeOption(
+                        context: ctx,
+                        title: 'رندرات ثلاثية الأبعاد 3D ولوحات خامات (Moodboard Render)',
+                        isSelected: selectedFileType.contains('رندرات'),
+                        onTap: () => setDialogState(
+                          () => selectedFileType = 'رندرات ثلاثية الأبعاد 3D ولوحات خامات',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _fileTypeOption(
+                        context: ctx,
+                        title: 'جدول كميات ومواصفات وتوريد مواد (BOQ Excel)',
+                        isSelected: selectedFileType.contains('كميات'),
+                        onTap: () => setDialogState(
+                          () => selectedFileType = 'جدول كميات ومواصفات وتوريد مواد (BOQ)',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                AppButton.primary(
+                  text: 'اعتماد وتوثيق إنجاز المرحلة فورياً',
+                  size: AppButtonSize.large,
+                  onPressed: () {
+                    final deliverableText =
+                        '${noteController.text.trim()} ($selectedFileType)';
+                    context.read<ProjectsBloc>().add(
+                          UpdateMilestoneRequested(
+                            projectId: project.id,
+                            milestoneId: milestone.id,
+                            isCompleted: true,
+                            proofImageUrl: deliverableText,
+                          ),
+                        );
+                    Navigator.of(ctx).pop();
+                  },
+                ),
+                const SizedBox(height: 6),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _fileTypeOption({
+    required BuildContext context,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: AppTheme.borderRadius,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                  ? AppColors.darkPrimaryContainer
+                  : AppColors.primaryContainer)
+              : Colors.transparent,
+          borderRadius: AppTheme.borderRadius,
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : Theme.of(context).dividerColor,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
+              color: isSelected
+                  ? (isDark ? AppColors.primaryLight : AppColors.primaryDark)
+                  : (isDark ? AppColors.darkTextMuted : AppColors.textMuted),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? (isDark ? AppColors.primaryLight : AppColors.primaryDark)
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -588,6 +867,102 @@ class ProjectDetailsScreen extends StatelessWidget {
                       height: 1.35,
                     ),
                   ),
+                ],
+              ),
+            ),
+          ],
+          // Proposed Milestones breakdown by Engineer
+          if (bid.proposedMilestones.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkSurfaceElevated
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: AppTheme.borderRadius,
+                border: Border.all(color: Theme.of(context).dividerColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'جدول المراحل والدفعات المقترحة (${bid.proposedMilestones.length}):',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'المجموع: \$${bid.proposedPriceUsd.toInt()}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ...bid.proposedMilestones.asMap().entries.map((e) {
+                    final idx = e.key;
+                    final m = e.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 16,
+                            height: 16,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDark
+                                  ? AppColors.darkPrimaryContainer
+                                  : AppColors.primaryContainer,
+                            ),
+                            child: Text(
+                              '${idx + 1}',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? AppColors.primaryLight
+                                    : AppColors.primaryDark,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              m.title,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            '\$${m.paymentAmountUsd.toInt()} (${m.percentageWeight}%)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),

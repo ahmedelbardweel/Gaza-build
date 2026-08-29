@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
+import 'app_loader.dart';
 
 enum AppButtonVariant {
   primary,
@@ -142,13 +143,8 @@ class AppButton extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (isLoading) ...[
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(_getLoadingColor(isDark)),
-            ),
+          AppLoader.small(
+            color: _getLoadingColor(isDark),
           ),
           const SizedBox(width: 8),
         ] else if (icon != null) ...[

@@ -7,6 +7,7 @@ import 'package:gaza_build/core/widgets/app_badge.dart';
 import 'package:gaza_build/core/widgets/app_button.dart';
 import 'package:gaza_build/core/widgets/app_card.dart';
 import 'package:gaza_build/core/widgets/app_empty_state.dart';
+import 'package:gaza_build/core/widgets/app_loader.dart';
 import 'package:gaza_build/core/widgets/app_scaffold.dart';
 import 'package:gaza_build/features/auth/models/user_model.dart';
 import 'package:gaza_build/features/projects/presentation/bloc/projects_bloc.dart';
@@ -46,12 +47,16 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         },
         child: BlocBuilder<ProjectsBloc, ProjectsState>(
           builder: (context, state) {
+            if (state.status == ProjectsStatus.loading && state.projects.isEmpty) {
+              return const Center(
+                child: AppLoader(
+                  message: 'جاري تحديث واسترجاع مشاريعك من السحابة...',
+                ),
+              );
+            }
+
             final allClientProjects = state.projects
-                .where(
-                  (p) =>
-                      p.clientId == widget.user.id ||
-                      p.clientId.startsWith('client_demo'),
-                )
+                .where((p) => p.clientId == widget.user.id)
                 .toList();
 
             final biddingCount = allClientProjects

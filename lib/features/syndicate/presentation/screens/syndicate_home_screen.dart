@@ -7,6 +7,7 @@ import 'package:gaza_build/core/widgets/app_button.dart';
 import 'package:gaza_build/core/widgets/app_card.dart';
 import 'package:gaza_build/core/widgets/app_dialog.dart';
 import 'package:gaza_build/core/widgets/app_empty_state.dart';
+import 'package:gaza_build/core/widgets/app_loader.dart';
 import 'package:gaza_build/core/widgets/app_scaffold.dart';
 import 'package:gaza_build/core/widgets/app_text_field.dart';
 import 'package:gaza_build/features/auth/models/user_model.dart';
@@ -214,21 +215,34 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
               const Tab(text: 'مؤشرات وإحصائيات القطاع'),
             ],
           ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              // Tab 1: Pending Verifications
-              _buildVerificationsTab(state),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              context.read<SyndicateBloc>().add(const LoadSyndicateDashboardRequested());
+            },
+            child: (state.status == SyndicateStatus.loading &&
+                    state.pendingVerifications.isEmpty &&
+                    state.guides.isEmpty)
+                ? const Center(
+                    child: AppLoader(
+                      message: 'جاري جلب وتحديث بيانات نقابة المهندسين...',
+                    ),
+                  )
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Tab 1: Pending Verifications
+                      _buildVerificationsTab(state),
 
-              // Tab 2: Reconstruction Guides & Codes
-              _buildGuidesTab(state),
+                      // Tab 2: Reconstruction Guides & Codes
+                      _buildGuidesTab(state),
 
-              // Tab 3: Arbitration Tribunal
-              _buildArbitrationTab(state),
+                      // Tab 3: Arbitration Tribunal
+                      _buildArbitrationTab(state),
 
-              // Tab 4: Sector Statistics & KPIs
-              _buildStatsTab(state),
-            ],
+                      // Tab 4: Sector Statistics & KPIs
+                      _buildStatsTab(state),
+                    ],
+                  ),
           ),
         );
       },

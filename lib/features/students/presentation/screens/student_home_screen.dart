@@ -7,6 +7,7 @@ import 'package:gaza_build/core/widgets/app_button.dart';
 import 'package:gaza_build/core/widgets/app_card.dart';
 import 'package:gaza_build/core/widgets/app_dialog.dart';
 import 'package:gaza_build/core/widgets/app_empty_state.dart';
+import 'package:gaza_build/core/widgets/app_loader.dart';
 import 'package:gaza_build/core/widgets/app_scaffold.dart';
 import 'package:gaza_build/core/widgets/app_text_field.dart';
 import 'package:gaza_build/features/auth/models/user_model.dart';
@@ -152,6 +153,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 }
               },
               builder: (context, state) {
+                if (state.status == StudentTasksStatus.loading && state.tasks.isEmpty) {
+                  return const Center(
+                    child: AppLoader(
+                      message: 'جاري تحميل وتحديث مهام الطلاب والمساعدين...',
+                    ),
+                  );
+                }
+
                 final availableTasks = state.tasks.where((t) => t.status == MicroTaskStatus.available).toList();
                 final myTasks = state.tasks
                     .where((t) => t.assignedStudentId == currentUser.id || t.assignedStudentId == 'student_curr')

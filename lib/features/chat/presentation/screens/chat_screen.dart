@@ -5,6 +5,7 @@ import 'package:gaza_build/core/theme/app_colors.dart';
 import 'package:gaza_build/core/theme/app_theme.dart';
 import 'package:gaza_build/core/widgets/app_badge.dart';
 import 'package:gaza_build/core/widgets/app_button.dart';
+import 'package:gaza_build/core/widgets/app_loader.dart';
 import 'package:gaza_build/core/widgets/app_scaffold.dart';
 import 'package:gaza_build/core/widgets/app_text_field.dart';
 import 'package:gaza_build/features/chat/models/chat_model.dart';
@@ -128,7 +129,11 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: AppLoader(
+                      message: 'جاري جلب وتحديث رسائل المحادثة...',
+                    ),
+                  )
                 : _messages.isEmpty
                     ? Center(
                         child: Text(

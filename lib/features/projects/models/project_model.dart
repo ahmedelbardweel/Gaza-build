@@ -21,6 +21,19 @@ enum ProjectStatus {
     }
   }
 
+  String get dbValue {
+    switch (this) {
+      case ProjectStatus.inProgress:
+        return 'in_progress';
+      case ProjectStatus.completed:
+        return 'completed';
+      case ProjectStatus.disputed:
+        return 'disputed';
+      case ProjectStatus.bidding:
+        return 'bidding';
+    }
+  }
+
   String get displayName {
     switch (this) {
       case ProjectStatus.bidding:
@@ -137,6 +150,7 @@ class ProjectBid extends Equatable {
   final String moodBoardDescription;
   final List<String> moodBoardImages;
   final String status; // 'pending', 'accepted', 'rejected'
+  final List<ProjectMilestone> proposedMilestones;
   final DateTime createdAt;
 
   const ProjectBid({
@@ -152,6 +166,7 @@ class ProjectBid extends Equatable {
     this.moodBoardDescription = '',
     this.moodBoardImages = const [],
     this.status = 'pending',
+    this.proposedMilestones = const [],
     required this.createdAt,
   });
 
@@ -172,6 +187,10 @@ class ProjectBid extends Equatable {
               .toList() ??
           const [],
       status: json['status'] as String? ?? 'pending',
+      proposedMilestones: (json['proposed_milestones'] as List<dynamic>?)
+              ?.map((e) => ProjectMilestone.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
@@ -192,6 +211,8 @@ class ProjectBid extends Equatable {
       'mood_board_description': moodBoardDescription,
       'mood_board_images': moodBoardImages,
       'status': status,
+      if (proposedMilestones.isNotEmpty)
+        'proposed_milestones': proposedMilestones.map((m) => m.toJson()).toList(),
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -209,6 +230,7 @@ class ProjectBid extends Equatable {
     String? moodBoardDescription,
     List<String>? moodBoardImages,
     String? status,
+    List<ProjectMilestone>? proposedMilestones,
     DateTime? createdAt,
   }) {
     return ProjectBid(
@@ -226,6 +248,7 @@ class ProjectBid extends Equatable {
           moodBoardDescription ?? this.moodBoardDescription,
       moodBoardImages: moodBoardImages ?? this.moodBoardImages,
       status: status ?? this.status,
+      proposedMilestones: proposedMilestones ?? this.proposedMilestones,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -244,6 +267,7 @@ class ProjectBid extends Equatable {
         moodBoardDescription,
         moodBoardImages,
         status,
+        proposedMilestones,
         createdAt,
       ];
 }
@@ -346,7 +370,7 @@ class Project extends Equatable {
       'city': city,
       'detailed_address': detailedAddress,
       'site_photos': sitePhotos,
-      'status': status.name,
+      'status': status.dbValue,
       'selected_engineer_id': selectedEngineerId,
       'selected_engineer_name': selectedEngineerName,
       'agreed_price_usd': agreedPriceUsd,

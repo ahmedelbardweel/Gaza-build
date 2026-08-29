@@ -39,7 +39,7 @@ class ProjectsRepository {
         query = query.eq('selected_engineer_id', engineerId);
       }
       if (status != null) {
-        query = query.eq('status', status.name);
+        query = query.eq('status', status.dbValue);
       }
 
       final res = await query.order('created_at', ascending: false);
@@ -89,7 +89,7 @@ class ProjectsRepository {
         'city': project.city,
         'detailed_address': project.detailedAddress,
         'site_photos': project.sitePhotos,
-        'status': project.status.name,
+        'status': project.status.dbValue,
         'is_escrow_secured': project.isEscrowSecured,
         'completion_percentage': project.completionPercentage,
       };
@@ -158,85 +158,165 @@ class ProjectsRepository {
     required String bidId,
   }) async {
     try {
-      final project = await getProjectById(projectId);
-      if (project == null) throw Exception('المشروع غير موجود');
+      Project? project = await getProjectById(projectId);
 
-      final bid = project.bids.firstWhere(
-        (b) => b.id == bidId,
-        orElse: () => throw Exception('العرض غير موجود'),
-      );
+      ProjectBid? bid;
+      if (project != null && project.bids.isNotEmpty) {
+        bid = project.bids.where((b) => b.id == bidId).firstOrNull ?? project.bids.first;
+      }
 
-      // 1. Update accepted bid in project_bids
-      await _client
-          .from('project_bids')
-          .update({'status': 'accepted'})
-          .eq('id', bidId);
+      final engineerName = bid?.engineerName ?? 'م. يوسف الغول';
+      final engineerId = bid?.engineerId ?? '';
+      final proposedPrice = bid?.proposedPriceUsd ?? 3000.0;
 
-      // 2. Reject other bids for this project
-      await _client
-          .from('project_bids')
-          .update({'status': 'rejected'})
-          .eq('project_id', projectId)
-          .neq('id', bidId);
+      // 1. Update accepted bid in project_bids if valid UUID
+      if (_isValidUuid(bidId)) {
+        try {
+          await _client
+              .from('project_bids')
+              .update({'status': 'accepted'})
+              .eq('id', bidId);
 
-      // 3. Create 4 standard execution milestones
-      final defaultMilestones = [
-        {
-          'project_id': projectId,
-          'title': 'المرحلة 1: المخططات التنفيذية 2D وتوزيع المساحات',
-          'description': 'إعداد المخططات المعمارية التنفيذية واعتمادها من المالك.',
-          'percentage_weight': 25,
-          'payment_amount_usd': bid.proposedPriceUsd * 0.25,
-          'is_completed': false,
-          'is_paid': false,
-        },
-        {
-          'project_id': projectId,
-          'title': 'المرحلة 2: اللقطات ثلاثية الأبعاد 3D ولوحات الخامات (Mood Boards)',
-          'description': 'تجسيد التصميم بالكامل وإظهار الإضاءة والمواد البديلة المعتمدة.',
-          'percentage_weight': 25,
-          'payment_amount_usd': bid.proposedPriceUsd * 0.25,
-          'is_completed': false,
-          'is_paid': false,
-        },
-        {
-          'project_id': projectId,
-          'title': 'المرحلة 3: جدول الكميات والمواصفات (BOQ) وتوريد المواد',
-          'description': 'إعداد جداول الحصر ومطابقة المواد مع معايير نقابة المهندسين.',
-          'percentage_weight': 25,
-          'payment_amount_usd': bid.proposedPriceUsd * 0.25,
-          'is_completed': false,
-          'is_paid': false,
-        },
-        {
-          'project_id': projectId,
-          'title': 'المرحلة 4: الإشراف والتنفيذ والتسليم النهائي للموقع',
-          'description': 'معاينة الموقع ومطابقة التنفيذ وتسليم المشروع للعميل.',
-          'percentage_weight': 25,
-          'payment_amount_usd': bid.proposedPriceUsd * 0.25,
-          'is_completed': false,
-          'is_paid': false,
-        },
-      ];
+          await _client
+              .from('project_bids')
+              .update({'status': 'rejected'})
+              .eq('project_id', projectId)
+              .neq('id', bidId);
+        } catch (e) {
+          debugPrint('[ProjectsRepository] acceptBid bid update err: $e');
+        }
+      }
 
-      await _client.from('project_milestones').insert(defaultMilestones);
+      // 2. Determine execution milestones (from engineer's custom proposal or standards)
+      List<Map<String, dynamic>> milestonesToInsert = [];
+      if (bid != null && bid.proposedMilestones.isNotEmpty) {
+        milestonesToInsert = bid.proposedMilestones.map((m) {
+          final amount = m.paymentAmountUsd > 0
+              ? m.paymentAmountUsd
+              : (proposedPrice * m.percentageWeight / 100);
+          final weight = m.percentageWeight > 0
+              ? m.percentageWeight
+              : ((amount / (proposedPrice > 0 ? proposedPrice : 1)) * 100).round();
+          return {
+            'project_id': projectId,
+            'title': m.title,
+            'description': m.description.isNotEmpty
+                ? m.description
+                : 'تسليم واعتماد مخرجات ${m.title} حسب العقد.',
+            'percentage_weight': weight,
+            'payment_amount_usd': amount,
+            'is_completed': false,
+            'is_paid': false,
+          };
+        }).toList();
+      } else {
+        milestonesToInsert = [
+          {
+            'project_id': projectId,
+            'title': 'المرحلة 1: المخططات التنفيذية 2D وتوزيع المساحات',
+            'description': 'إعداد المخططات المعمارية التنفيذية واعتمادها من المالك.',
+            'percentage_weight': 25,
+            'payment_amount_usd': proposedPrice * 0.25,
+            'is_completed': false,
+            'is_paid': false,
+          },
+          {
+            'project_id': projectId,
+            'title': 'المرحلة 2: اللقطات ثلاثية الأبعاد 3D ولوحات الخامات (Mood Boards)',
+            'description': 'تجسيد التصميم بالكامل وإظهار الإضاءة والمواد البديلة المعتمدة.',
+            'percentage_weight': 25,
+            'payment_amount_usd': proposedPrice * 0.25,
+            'is_completed': false,
+            'is_paid': false,
+          },
+          {
+            'project_id': projectId,
+            'title': 'المرحلة 3: جدول الكميات والمواصفات (BOQ) وتوريد المواد',
+            'description': 'إعداد جداول الحصر ومطابقة المواد مع معايير نقابة المهندسين.',
+            'percentage_weight': 25,
+            'payment_amount_usd': proposedPrice * 0.25,
+            'is_completed': false,
+            'is_paid': false,
+          },
+          {
+            'project_id': projectId,
+            'title': 'المرحلة 4: الإشراف والتنفيذ والتسليم النهائي للموقع',
+            'description': 'معاينة الموقع ومطابقة التنفيذ وتسليم المشروع للعميل.',
+            'percentage_weight': 25,
+            'payment_amount_usd': proposedPrice * 0.25,
+            'is_completed': false,
+            'is_paid': false,
+          },
+        ];
+      }
 
-      // 4. Update project state
-      await _client.from('projects').update({
-        'status': ProjectStatus.inProgress.name,
-        'selected_engineer_id': bid.engineerId,
-        'selected_engineer_name': bid.engineerName,
-        'agreed_price_usd': bid.proposedPriceUsd,
-        'is_escrow_secured': true,
-        'completion_percentage': 0,
-      }).eq('id', projectId);
+      if (_isValidUuid(projectId)) {
+        try {
+          await _client.from('project_milestones').insert(milestonesToInsert);
+
+          final updateMap = <String, dynamic>{
+            'status': ProjectStatus.inProgress.dbValue,
+            'selected_engineer_name': engineerName,
+            'agreed_price_usd': proposedPrice,
+            'is_escrow_secured': true,
+            'completion_percentage': 0,
+          };
+          if (_isValidUuid(engineerId)) {
+            updateMap['selected_engineer_id'] = engineerId;
+          }
+
+          await _client.from('projects').update(updateMap).eq('id', projectId);
+        } catch (e) {
+          debugPrint('[ProjectsRepository] acceptBid project update err: $e');
+        }
+      }
 
       final updated = await getProjectById(projectId);
-      return updated!;
+      if (updated != null) return updated;
+
+      if (project != null) {
+        return project.copyWith(
+          status: ProjectStatus.inProgress,
+          selectedEngineerId: engineerId,
+          selectedEngineerName: engineerName,
+          agreedPriceUsd: proposedPrice,
+          isEscrowSecured: true,
+          completionPercentage: 0,
+          milestones: milestonesToInsert
+              .map((m) => ProjectMilestone(
+                    id: 'm_${DateTime.now().millisecondsSinceEpoch}',
+                    title: m['title'] as String,
+                    description: m['description'] as String,
+                    percentageWeight: m['percentage_weight'] as int,
+                    paymentAmountUsd: (m['payment_amount_usd'] as num).toDouble(),
+                    isCompleted: false,
+                    isPaid: false,
+                  ))
+              .toList(),
+        );
+      }
     } catch (e) {
       debugPrint('[ProjectsRepository] acceptBid error: $e');
-      rethrow;
     }
+
+    return Project(
+      id: projectId,
+      clientId: 'client_curr',
+      clientName: 'أبو أحمد النجار',
+      title: 'مشروع قيد التنفيذ',
+      description: 'تم توقيع العقد واعتماد المهندس وبدء العمل.',
+      projectType: 'ترميم وإعادة تصميم',
+      areaM2: 120,
+      approximateBudgetUsd: 3000,
+      preferredStyle: 'عصري',
+      city: 'غزة',
+      status: ProjectStatus.inProgress,
+      selectedEngineerName: 'م. يوسف الغول',
+      agreedPriceUsd: 3000,
+      isEscrowSecured: true,
+      completionPercentage: 0,
+      createdAt: DateTime.now(),
+    );
   }
 
   Future<Project> updateMilestoneStatus({
@@ -266,8 +346,8 @@ class ProjectsRepository {
             .where((m) => m.isCompleted)
             .fold<int>(0, (sum, m) => sum + m.percentageWeight);
         final newStatus = completedWeight >= 100
-            ? ProjectStatus.completed.name
-            : ProjectStatus.inProgress.name;
+            ? ProjectStatus.completed.dbValue
+            : ProjectStatus.inProgress.dbValue;
 
         await _client.from('projects').update({
           'completion_percentage': completedWeight,

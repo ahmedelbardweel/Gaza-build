@@ -22,6 +22,19 @@ enum MicroTaskStatus {
     }
   }
 
+  String get dbValue {
+    switch (this) {
+      case MicroTaskStatus.inProgress:
+        return 'in_progress';
+      case MicroTaskStatus.underReview:
+        return 'under_review';
+      case MicroTaskStatus.completed:
+        return 'completed';
+      case MicroTaskStatus.available:
+        return 'available';
+    }
+  }
+
   String get displayName {
     switch (this) {
       case MicroTaskStatus.available:
@@ -112,7 +125,7 @@ class MicroTask extends Equatable {
       'software_needed': softwareNeeded,
       'reward_usd': rewardUsd,
       'deadline_days': deadlineDays,
-      'status': status.name,
+      'status': status.dbValue,
       'deliverable_note': deliverableNote,
       'deliverable_file_url': deliverableFileUrl,
       'mentor_feedback': mentorFeedback,

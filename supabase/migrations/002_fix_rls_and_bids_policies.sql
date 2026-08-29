@@ -3,6 +3,9 @@
 -- Ensures Engineers can submit bids, Clients can review/accept, and live Supabase sync works
 -- ==============================================================================
 
+-- 0. Ensure proposed_milestones column exists on project_bids
+ALTER TABLE public.project_bids ADD COLUMN IF NOT EXISTS proposed_milestones jsonb not null default '[]'::jsonb;
+
 -- 1. Profiles: Allow all authenticated users to read profiles (needed for engineer names, avatars, client names)
 DROP POLICY IF EXISTS "profiles_self_access" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_read_all" ON public.profiles;
