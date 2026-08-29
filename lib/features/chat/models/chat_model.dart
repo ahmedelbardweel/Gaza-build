@@ -39,7 +39,6 @@ class ChatMessage extends Equatable {
 
   Map<String, dynamic> toJson([String? conversationKey]) {
     final map = <String, dynamic>{
-      'id': id,
       'sender_id': senderId,
       'sender_name': senderName,
       'sender_role': senderRole,
@@ -48,6 +47,9 @@ class ChatMessage extends Equatable {
       'created_at': timestamp.toIso8601String(),
       'is_quick_consult': isQuickConsult,
     };
+    if (id.isNotEmpty && !id.startsWith('msg_')) {
+      map['id'] = id;
+    }
     if (conversationKey != null) {
       map['conversation_key'] = conversationKey;
     }

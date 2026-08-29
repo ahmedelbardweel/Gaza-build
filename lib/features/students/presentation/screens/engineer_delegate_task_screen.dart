@@ -47,8 +47,8 @@ class _EngineerDelegateTaskScreenState extends State<EngineerDelegateTaskScreen>
 
     final currentUser = context.read<AuthBloc>().state.user;
     final task = MicroTask(
-      id: 'task_${DateTime.now().millisecondsSinceEpoch}',
-      engineerId: currentUser?.id ?? 'eng_curr',
+      id: '',
+      engineerId: currentUser?.id ?? '',
       engineerName: currentUser?.fullName.isNotEmpty == true ? currentUser!.fullName : 'م. يوسف الغول',
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),

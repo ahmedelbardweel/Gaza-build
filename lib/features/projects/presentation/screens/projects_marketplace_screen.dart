@@ -106,12 +106,16 @@ class _ProjectsMarketplaceScreenState extends State<ProjectsMarketplaceScreen> {
 
                   final currentUser = context.read<AuthBloc>().state.user;
                   final bid = ProjectBid(
-                    id: 'bid_${DateTime.now().millisecondsSinceEpoch}',
+                    id: '',
                     projectId: project.id,
-                    engineerId: currentUser?.id ?? 'eng_curr',
-                    engineerName: currentUser?.fullName.isNotEmpty == true ? currentUser!.fullName : 'مهندس معتمد',
-                    proposedPriceUsd: double.tryParse(priceController.text.trim()) ?? 3000.0,
-                    estimatedDurationDays: int.tryParse(daysController.text.trim()) ?? 20,
+                    engineerId: currentUser?.id ?? '',
+                    engineerName: currentUser?.fullName.isNotEmpty == true
+                        ? currentUser!.fullName
+                        : 'مهندس معتمد',
+                    proposedPriceUsd:
+                        double.tryParse(priceController.text.trim()) ?? 3000.0,
+                    estimatedDurationDays:
+                        int.tryParse(daysController.text.trim()) ?? 20,
                     proposalMessage: msgController.text.trim(),
                     moodBoardDescription: moodBoardController.text.trim(),
                     createdAt: DateTime.now(),

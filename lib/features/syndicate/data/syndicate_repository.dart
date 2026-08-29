@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gaza_build/shared/services/supabase_service.dart';
 import 'package:gaza_build/features/auth/models/user_model.dart';
@@ -15,16 +16,29 @@ class SyndicateRepository {
     return client;
   }
 
-  Future<List<BaseProfile>> getPendingVerifications() async {
-    final res = await _client
-        .from('profiles')
-        .select()
-        .eq('verification_status', VerificationStatus.pending.name)
-        .order('created_at', ascending: false);
+  bool _isValidUuid(String? id) {
+    if (id == null || id.isEmpty) return false;
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    return uuidRegex.hasMatch(id);
+  }
 
-    return (res as List<dynamic>)
-        .map((json) => BaseProfile.fromJson(json as Map<String, dynamic>))
-        .toList();
+  Future<List<BaseProfile>> getPendingVerifications() async {
+    try {
+      final res = await _client
+          .from('profiles')
+          .select()
+          .eq('verification_status', VerificationStatus.pending.name)
+          .order('created_at', ascending: false);
+
+      return (res as List<dynamic>)
+          .map((json) => BaseProfile.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('[SyndicateRepository] getPendingVerifications error: $e');
+      return [];
+    }
   }
 
   Future<BaseProfile> updateVerificationStatus({
@@ -32,66 +46,96 @@ class SyndicateRepository {
     required VerificationStatus status,
     String? rejectionReason,
   }) async {
-    final updateData = <String, dynamic>{
-      'verification_status': status.name,
-      'rejection_reason': rejectionReason,
-      'updated_at': DateTime.now().toIso8601String(),
-    };
+    try {
+      final updateData = <String, dynamic>{
+        'verification_status': status.name,
+        'rejection_reason': rejectionReason,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
 
-    await _client.from('profiles').update(updateData).eq('id', userId);
+      await _client.from('profiles').update(updateData).eq('id', userId);
 
-    final res = await _client
-        .from('profiles')
-        .select()
-        .eq('id', userId)
-        .single();
-    return BaseProfile.fromJson(res);
+      final res = await _client
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .single();
+      return BaseProfile.fromJson(res);
+    } catch (e) {
+      debugPrint('[SyndicateRepository] updateVerificationStatus error: $e');
+      rethrow;
+    }
   }
 
   Future<List<ReconstructionGuide>> getGuides() async {
-    final res = await _client
-        .from('reconstruction_guides')
-        .select()
-        .order('published_date', ascending: false);
+    try {
+      final res = await _client
+          .from('reconstruction_guides')
+          .select()
+          .order('published_date', ascending: false);
 
-    return (res as List<dynamic>)
-        .map((json) => ReconstructionGuide.fromJson(json as Map<String, dynamic>))
-        .toList();
+      return (res as List<dynamic>)
+          .map((json) => ReconstructionGuide.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('[SyndicateRepository] getGuides error: $e');
+      return [];
+    }
   }
 
   Future<ReconstructionGuide> addGuide(ReconstructionGuide guide) async {
-    await _client.from('reconstruction_guides').upsert(guide.toJson());
-    return guide;
+    try {
+      final map = guide.toJson();
+      if (!_isValidUuid(guide.id)) {
+        map.remove('id');
+      }
+
+      final res = await _client.from('reconstruction_guides').insert(map).select().single();
+      return ReconstructionGuide.fromJson(res);
+    } catch (e) {
+      debugPrint('[SyndicateRepository] addGuide error: $e');
+      rethrow;
+    }
   }
 
   Future<List<ArbitrationCase>> getArbitrationCases() async {
-    final res = await _client
-        .from('arbitration_cases')
-        .select()
-        .order('created_at', ascending: false);
+    try {
+      final res = await _client
+          .from('arbitration_cases')
+          .select()
+          .order('created_at', ascending: false);
 
-    return (res as List<dynamic>)
-        .map((json) => ArbitrationCase.fromJson(json as Map<String, dynamic>))
-        .toList();
+      return (res as List<dynamic>)
+          .map((json) => ArbitrationCase.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('[SyndicateRepository] getArbitrationCases error: $e');
+      return [];
+    }
   }
 
   Future<ArbitrationCase> issueArbitrationRuling({
     required String caseId,
     required String ruling,
   }) async {
-    final updateData = {
-      'syndicate_ruling': ruling,
-      'status': 'resolved',
-    };
+    try {
+      final updateData = {
+        'syndicate_ruling': ruling,
+        'status': 'resolved',
+      };
 
-    await _client.from('arbitration_cases').update(updateData).eq('id', caseId);
+      await _client.from('arbitration_cases').update(updateData).eq('id', caseId);
 
-    final res = await _client
-        .from('arbitration_cases')
-        .select()
-        .eq('id', caseId)
-        .single();
-    return ArbitrationCase.fromJson(res);
+      final res = await _client
+          .from('arbitration_cases')
+          .select()
+          .eq('id', caseId)
+          .single();
+      return ArbitrationCase.fromJson(res);
+    } catch (e) {
+      debugPrint('[SyndicateRepository] issueArbitrationRuling error: $e');
+      rethrow;
+    }
   }
 
   Future<SectorStatistics> getStatistics() async {

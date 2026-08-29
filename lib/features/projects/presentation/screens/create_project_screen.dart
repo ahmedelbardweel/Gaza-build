@@ -52,7 +52,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     if (currentUser == null) return;
 
     final project = Project(
-      id: 'proj_${DateTime.now().millisecondsSinceEpoch}',
+      id: '',
       clientId: currentUser.id,
       clientName: currentUser.fullName.isNotEmpty ? currentUser.fullName : 'صاحب المشروع',
       title: _titleController.text.trim(),

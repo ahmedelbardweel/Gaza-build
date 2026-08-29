@@ -92,7 +92,7 @@ class _SyndicateHomeScreenState extends State<SyndicateHomeScreen>
                 if (titleController.text.trim().isEmpty) return;
 
                 final guide = ReconstructionGuide(
-                  id: 'guide_${DateTime.now().millisecondsSinceEpoch}',
+                  id: '',
                   title: titleController.text.trim(),
                   category: categoryController.text.trim(),
                   summary: summaryController.text.trim(),
