@@ -10,7 +10,7 @@ on:
 jobs:
   build-ios:
     name: Build Flutter iOS Application
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
       - name: 📥 Checkout Repository
@@ -25,7 +25,6 @@ jobs:
       - name: 💙 Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.x'
           channel: 'stable'
           cache: true
 
@@ -40,17 +39,17 @@ jobs:
 
       - name: 📦 Package Unsigned Payload as IPA
         run: |
-          cd build/ios/iphoneos
-          mkdir Payload
-          cp -r Runner.app Payload/
-          zip -r GazaBuild_Unsigned.ipa Payload
-          cd ../../..
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r GazaBuild_iOS.ipa Payload
+          mkdir -p output
+          mv GazaBuild_iOS.ipa output/
 
       - name: 🚀 Upload iOS IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: GazaBuild-iOS-IPA
-          path: build/ios/iphoneos/GazaBuild_Unsigned.ipa
+          path: output/GazaBuild_iOS.ipa
           retention-days: 14
 
       - name: 🚀 Upload Runner.app Artifact
