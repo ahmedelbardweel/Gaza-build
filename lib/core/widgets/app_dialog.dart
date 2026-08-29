@@ -216,7 +216,7 @@ abstract final class AppDialog {
                       ),
                     ),
                   ),
-                  ?trailing,
+                  if (trailing != null) trailing,
                   TextButton(
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

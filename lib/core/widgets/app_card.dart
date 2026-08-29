@@ -89,7 +89,7 @@ class AppCard extends StatelessWidget {
           ),
           if (child != null) const SizedBox(height: 12),
         ],
-        ?child,
+        if (child != null) child!,
         if (footer != null) ...[
           const SizedBox(height: 12),
           Divider(height: 1, color: Theme.of(context).dividerColor),
